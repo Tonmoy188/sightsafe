@@ -1,0 +1,28 @@
+{
+  "sessionStartTime": "2026-05-02T18:19:52.003Z",
+  "sessionEndTime": "2026-05-02T18:20:04.722Z",
+  "totalScans": 3,
+  "scans": [
+    {
+      "scanNumber": 1,
+      "timestamp": "2026-05-02T18:19:52.003Z",
+      "detectedItem": "Clear path",
+      "riskLevel": "SAFE",
+      "message": "Good news! The path ahead is clear and safe. You may proceed confidently."
+    },
+    {
+      "scanNumber": 2,
+      "timestamp": "2026-05-02T18:19:57.006Z",
+      "detectedItem": "Person nearby",
+      "riskLevel": "MEDIUM",
+      "message": "Heads up! Another person is in the area. Move carefully to avoid any collision."
+    },
+    {
+      "scanNumber": 3,
+      "timestamp": "2026-05-02T18:20:02.029Z",
+      "detectedItem": "Person nearby",
+      "riskLevel": "MEDIUM",
+      "message": "Notice: Someone is nearby. Please be aware of their presence as you move."
+    }
+  ]
+}
