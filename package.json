@@ -1,0 +1,18 @@
+{
+  "name": "sightsafe-accessibility-assistant",
+  "version": "1.0.0",
+  "description": "SightSafe AI Accessibility Assistant for environment scanning and obstacle detection",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "keywords": [
+    "accessibility",
+    "ai",
+    "obstacle-detection",
+    "seniors",
+    "safety"
+  ],
+  "author": "",
+  "license": "ISC"
+}
