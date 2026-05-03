@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SightSafe - AI Vision Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #000000;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        /* Premium animated gradient background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
+                linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
+            animation: gradientShift 15s ease infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        @keyframes gradientShift {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        
+        /* Animated mesh gradient overlay */
+        body::after {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background:
+                radial-gradient(circle, rgba(59, 130, 246, 0.08) 1px, transparent 1px),
+                radial-gradient(circle, rgba(139, 92, 246, 0.08) 1px, transparent 1px);
+            background-size: 50px 50px, 80px 80px;
+            background-position: 0 0, 40px 40px;
+            animation: meshMove 30s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        @keyframes meshMove {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            100% { transform: translate(50px, 50px) rotate(360deg); }
+        }
+        
+        /* Loading Screen with animated ring */
+        #loadingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        
+        #loadingScreen.hidden {
+            opacity: 0;
+            transform: scale(1.1);
+            pointer-events: none;
+        }
+        
+        .loading-ring {
+            width: 140px;
+            height: 140px;
+            border: 5px solid rgba(59, 130, 246, 0.1);
+            border-top: 5px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            position: relative;
+            box-shadow: 0 0 60px rgba(59, 130, 246, 0.4);
+        }
+        
+        .loading-ring::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px;
+            height: 100px;
+            border: 5px solid rgba(139, 92, 246, 0.1);
+            border-bottom: 5px solid #8b5cf6;
+            border-radius: 50%;
+            animation: spin 1.5s linear infinite reverse;
+            box-shadow: 0 0 40px rgba(139, 92, 246, 0.4);
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-logo {
+            position: absolute;
+            font-size: 3.5rem;
+            animation: pulse 2s ease-in-out infinite;
+            filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.6));
+        }
+        
+        /* Premium Glassmorphism cards */
+        .glass {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                0 0 0 1px rgba(59, 130, 246, 0.1);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        
+        .glass::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        }
+        
+        .glass:hover {
+            transform: translateY(-6px) scale(1.01);
+            box-shadow:
+                0 20px 60px rgba(0, 0, 0, 0.7),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15),
+                0 0 0 2px rgba(59, 130, 246, 0.3),
+                0 0 80px rgba(59, 130, 246, 0.2);
+            border-color: rgba(59, 130, 246, 0.4);
+        }
+        
+        /* Enhanced floating particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 1;
+            pointer-events: none;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(59, 130, 246, 0.6);
+            border-radius: 50%;
+            animation: float 30s infinite;
+            box-shadow:
+                0 0 20px rgba(59, 130, 246, 0.8),
+                0 0 40px rgba(59, 130, 246, 0.4);
+        }
+        
+        .particle:nth-child(3n) {
+            background: rgba(139, 92, 246, 0.6);
+            box-shadow:
+                0 0 20px rgba(139, 92, 246, 0.8),
+                0 0 40px rgba(139, 92, 246, 0.4);
+        }
+        
+        .particle:nth-child(5n) {
+            background: rgba(6, 182, 212, 0.6);
+            box-shadow:
+                0 0 20px rgba(6, 182, 212, 0.8),
+                0 0 40px rgba(6, 182, 212, 0.4);
+        }
+        
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0) translateX(0) scale(1);
+                opacity: 0;
+            }
+            5% { opacity: 1; }
+            95% { opacity: 1; }
+            100% {
+                transform: translateY(-120vh) translateX(100px) scale(0.3);
+                opacity: 0;
+            }
+        }
+        
+        /* Hero animations */
+        .fade-in-up {
+            animation: fadeInUp 1.2s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(60px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Premium gradient text */
+        .gradient-text {
+            background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 30%, #8b5cf6 60%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientFlow 4s ease infinite;
+            background-size: 300% 300%;
+            filter: drop-shadow(0 0 30px rgba(59, 130, 246, 0.5));
+        }
+        
+        @keyframes gradientFlow {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        /* Floating scan button */
+        .scan-button {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 40px rgba(59, 130, 246, 0.4), 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .scan-button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .scan-button:hover:not(:disabled)::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .scan-button:hover:not(:disabled) {
+            transform: scale(1.05) translateY(-4px);
+            box-shadow: 0 0 60px rgba(59, 130, 246, 0.6), 0 20px 50px rgba(0, 0, 0, 0.4);
+        }
+        
+        .scan-button:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+        
+        .scan-button.pulse {
+            animation: buttonPulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes buttonPulse {
+            0%, 100% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.4), 0 10px 30px rgba(0, 0, 0, 0.3); }
+            50% { box-shadow: 0 0 60px rgba(59, 130, 246, 0.7), 0 10px 30px rgba(0, 0, 0, 0.3); }
+        }
+        
+        /* Camera preview with 3D effect */
+        .camera-preview {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #06b6d4 100%);
+            position: relative;
+            overflow: hidden;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+        
+        .camera-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            opacity: 0.4;
+            animation: gridMove 20s linear infinite;
+        }
+        
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(40px, 40px); }
+        }
+        
+        .scan-line {
+            position: absolute;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, #06b6d4, #3b82f6, transparent);
+            box-shadow: 0 0 30px #3b82f6, 0 0 60px #06b6d4;
+            animation: scanAnimation 2.5s ease-in-out infinite;
+        }
+        
+        @keyframes scanAnimation {
+            0%, 100% { top: 0; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+        
+        /* Progress bar with glow */
+        .progress-bar {
+            width: 0%;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.8);
+        }
+        
+        /* Results card entrance */
+        .slide-in {
+            animation: slideIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(50px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        
+        /* Risk badge with dramatic effect */
+        .risk-badge {
+            animation: badgeEntrance 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+        }
+        
+        @keyframes badgeEntrance {
+            0% { opacity: 0; transform: scale(0.3) rotate(-15deg); }
+            50% { transform: scale(1.1) rotate(5deg); }
+            100% { opacity: 1; transform: scale(1) rotate(0deg); }
+        }
+        
+        .risk-badge::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            border-radius: inherit;
+            transform: translate(-50%, -50%);
+            animation: badgeGlow 2s ease-in-out infinite;
+            z-index: -1;
+        }
+        
+        @keyframes badgeGlow {
+            0%, 100% { box-shadow: 0 0 20px currentColor; opacity: 0.5; }
+            50% { box-shadow: 0 0 40px currentColor; opacity: 0.8; }
+        }
+        
+        /* Voice waveform animation */
+        .waveform {
+            display: inline-flex;
+            gap: 4px;
+            align-items: center;
+        }
+        
+        .wave-bar {
+            width: 4px;
+            height: 20px;
+            background: currentColor;
+            border-radius: 2px;
+            animation: wave 1.2s ease-in-out infinite;
+        }
+        
+        .wave-bar:nth-child(1) { animation-delay: 0s; }
+        .wave-bar:nth-child(2) { animation-delay: 0.1s; }
+        .wave-bar:nth-child(3) { animation-delay: 0.2s; }
+        .wave-bar:nth-child(4) { animation-delay: 0.3s; }
+        .wave-bar:nth-child(5) { animation-delay: 0.4s; }
+        
+        @keyframes wave {
+            0%, 100% { height: 12px; }
+            50% { height: 32px; }
+        }
+        
+        /* History cards with smooth entrance */
+        .history-card {
+            animation: historySlide 0.6s ease-out;
+            transition: all 0.3s ease;
+        }
+        
+        @keyframes historySlide {
+            from { opacity: 0; transform: translateX(-40px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .history-card:hover {
+            transform: translateX(8px) translateY(-2px);
+            background: rgba(51, 65, 85, 0.8);
+            border-color: rgba(59, 130, 246, 0.4);
+        }
+        
+        /* Smooth scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(30, 41, 59, 0.3);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #3b82f6, #06b6d4);
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #2563eb, #0891b2);
+        }
+        
+        /* Pulse animation */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+        
+        /* Status indicator */
+        .status-dot {
+            animation: statusPulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes statusPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            50% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+        }
+        
+        /* Smooth scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* Text display for voice */
+        .voice-text-display {
+            animation: textFadeIn 0.5s ease-out;
+        }
+        
+        @keyframes textFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="text-white">
+    <!-- Loading Screen -->
+    <div id="loadingScreen">
+        <div class="text-center">
+            <div class="relative inline-block mb-8">
+                <div class="loading-ring"></div>
+                <div class="loading-logo">🤖</div>
+            </div>
+            <h1 class="text-5xl font-bold mb-3 gradient-text">SightSafe</h1>
+            <p class="text-xl text-gray-400">Initializing AI Vision System...</p>
+        </div>
+    </div>
+
+    <!-- Animated particles -->
+    <div class="particles" id="particles"></div>
+    
+    <!-- Main container -->
+    <div class="relative z-10">
+        <!-- Hero Header -->
+        <header class="py-16 px-4 fade-in-up">
+            <div class="container mx-auto max-w-7xl">
+                <div class="text-center">
+                    <div class="flex items-center justify-center mb-8">
+                        <div class="relative">
+                            <div class="absolute inset-0 bg-blue-500 blur-3xl opacity-40 animate-pulse"></div>
+                            <span class="relative text-9xl">🤖</span>
+                        </div>
+                    </div>
+                    <h1 class="text-7xl md:text-8xl font-black mb-6 gradient-text">
+                        SightSafe
+                    </h1>
+                    <p class="text-3xl md:text-4xl text-blue-200 font-light mb-8">
+                        AI Vision Assistant for Seniors
+                    </p>
+                    <div class="flex items-center justify-center gap-3 text-xl text-gray-400">
+                        <span class="w-3 h-3 bg-green-500 rounded-full status-dot"></span>
+                        <span class="font-medium">System Online & Ready</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="container mx-auto max-w-7xl px-4 pb-16">
+            <!-- Camera Section -->
+            <div class="glass rounded-3xl p-8 mb-10 shadow-2xl fade-in-up" style="animation-delay: 0.2s;">
+                <h2 class="text-4xl font-bold mb-8 text-center text-cyan-300 flex items-center justify-center gap-3">
+                    <span>📹</span>
+                    <span>Live Camera Feed</span>
+                </h2>
+                
+                <!-- Camera Preview -->
+                <div class="camera-preview rounded-3xl h-[500px] mb-8 relative overflow-hidden" id="cameraView">
+                    <div class="camera-grid"></div>
+                    <div class="absolute inset-0 flex items-center justify-center z-10">
+                        <div class="text-center" id="cameraContent">
+                            <div class="relative inline-block mb-6">
+                                <div class="absolute inset-0 bg-cyan-500 blur-3xl opacity-50"></div>
+                                <span class="relative text-8xl">📸</span>
+                            </div>
+                            <p class="text-4xl font-bold text-white mb-3">Ready to Scan</p>
+                            <p class="text-2xl text-cyan-200">Press the button below to analyze your environment</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Progress Bar -->
+                <div class="mb-8 h-3 bg-gray-800/50 rounded-full overflow-hidden hidden" id="progressContainer">
+                    <div class="progress-bar h-full bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-500" id="progressBar"></div>
+                </div>
+                
+                <!-- Scan Button -->
+                <button 
+                    id="scanBtn" 
+                    class="scan-button pulse w-full bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 text-white text-4xl font-black py-10 px-12 rounded-3xl disabled:opacity-50 disabled:cursor-not-allowed"
+                    onclick="startScan()">
+                    <span class="relative flex items-center justify-center gap-5">
+                        <span class="text-6xl">📸</span>
+                        <span>Scan Environment</span>
+                    </span>
+                </button>
+            </div>
+
+            <!-- Results Section -->
+            <div id="resultsSection" class="glass rounded-3xl p-10 mb-10 shadow-2xl hidden">
+                <h2 class="text-4xl font-bold mb-10 text-center text-green-300 flex items-center justify-center gap-3">
+                    <span>📊</span>
+                    <span>Detection Results</span>
+                </h2>
+                
+                <!-- Risk Level Badge -->
+                <div class="text-center mb-10">
+                    <div id="riskBadge" class="risk-badge inline-block px-12 py-8 rounded-3xl text-5xl font-black shadow-2xl"></div>
+                </div>
+                
+                <!-- Detection Details Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+                    <div class="glass rounded-3xl p-8">
+                        <div class="flex items-center gap-5">
+                            <span class="text-6xl">🎯</span>
+                            <div>
+                                <p class="text-gray-400 text-xl mb-2">Detected Object</p>
+                                <p id="detectedItem" class="text-3xl font-bold"></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="glass rounded-3xl p-8">
+                        <div class="flex items-center gap-5">
+                            <span class="text-6xl">⏰</span>
+                            <div>
+                                <p class="text-gray-400 text-xl mb-2">Detection Time</p>
+                                <p id="detectionTime" class="text-3xl font-bold"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Safety Message Card -->
+                <div class="bg-gradient-to-br from-gray-800/80 to-gray-900/80 rounded-3xl p-10 mb-10 border-2 border-yellow-500/30 backdrop-blur-sm">
+                    <div class="flex items-start gap-5">
+                        <span class="text-6xl">💬</span>
+                        <div class="flex-1">
+                            <h3 class="text-3xl font-bold mb-5 text-yellow-300">Safety Guidance</h3>
+                            <p id="safetyMessage" class="text-3xl leading-relaxed text-gray-100"></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Voice Button -->
+                <button 
+                    id="voiceBtn" 
+                    class="w-full bg-gradient-to-r from-green-600 via-emerald-500 to-green-600 hover:from-green-500 hover:via-emerald-400 hover:to-green-500 text-white text-3xl font-black py-8 px-10 rounded-3xl shadow-2xl transition-all"
+                    onclick="playVoice()">
+                    <span class="flex items-center justify-center gap-5">
+                        <span class="text-5xl">🔊</span>
+                        <span id="voiceBtnText">Play Voice Announcement</span>
+                        <span class="waveform hidden" id="waveform">
+                            <span class="wave-bar"></span>
+                            <span class="wave-bar"></span>
+                            <span class="wave-bar"></span>
+                            <span class="wave-bar"></span>
+                            <span class="wave-bar"></span>
+                        </span>
+                    </span>
+                </button>
+                
+                <!-- Voice Text Display -->
+                <div id="voiceTextDisplay" class="hidden mt-6 glass rounded-3xl p-8">
+                    <div class="flex items-start gap-4">
+                        <span class="text-4xl">📢</span>
+                        <div class="flex-1">
+                            <p class="text-gray-400 text-lg mb-2">Voice Message:</p>
+                            <p id="voiceText" class="text-2xl text-white leading-relaxed"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scan History -->
+            <div class="glass rounded-3xl p-10 shadow-2xl fade-in-up" style="animation-delay: 0.4s;">
+                <div class="flex items-center justify-between mb-10">
+                    <h2 class="text-4xl font-bold text-purple-300 flex items-center gap-3">
+                        <span>📜</span>
+                        <span>Scan History</span>
+                    </h2>
+                    <span id="scanCount" class="text-2xl text-gray-400 font-semibold">0 scans</span>
+                </div>
+                <div id="historyList" class="space-y-5 max-h-[600px] overflow-y-auto pr-2">
+                    <div class="text-center py-16">
+                        <span class="text-8xl mb-6 block opacity-40">📋</span>
+                        <p class="text-3xl text-gray-400 font-semibold">No scans yet</p>
+                        <p class="text-xl text-gray-500 mt-3">Click "Scan Environment" to begin analyzing</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="py-10 text-center fade-in-up" style="animation-delay: 0.6s;">
+            <div class="glass inline-block px-10 py-5 rounded-full">
+                <p class="text-2xl text-gray-300 flex items-center gap-3">
+                    <span class="text-3xl">🛡️</span>
+                    <span>Powered by <span class="font-bold gradient-text">IBM Bob AI</span></span>
+                </p>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Hide loading screen with smooth transition
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('loadingScreen').classList.add('hidden');
+            }, 2500);
+        });
+
+        // Create premium floating particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 30 + 's';
+                particle.style.animationDuration = (25 + Math.random() * 15) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+        createParticles();
+
+        // Enhanced detection options with better distribution
+        const detectionOptions = [
+            // HIGH RISK (30%)
+            {
+                item: 'Obstacle ahead',
+                risk: 'HIGH',
+                icon: '🚧',
+                messages: [
+                    'Caution! There is an obstacle directly in your path. Please stop immediately and navigate carefully around it to avoid injury.',
+                    'Warning! A large object is blocking your way ahead. Take your time and move slowly to safely avoid the obstruction.',
+                    'Alert! Something is obstructing your path. Please proceed with extreme care or ask someone nearby for assistance.'
+                ]
+            },
+            {
+                item: 'Stairs detected',
+                risk: 'HIGH',
+                icon: '🪜',
+                messages: [
+                    'Important! Stairs are directly ahead of you. Please locate and use the handrail, then take one careful step at a time.',
+                    'Caution! Steps have been detected in front of you. Hold the railing firmly with both hands and move very carefully.',
+                    'Warning! Stairway ahead. Please be extremely careful and consider asking for help if you feel uncertain.'
+                ]
+            },
+            {
+                item: 'Uneven surface',
+                risk: 'HIGH',
+                icon: '⚠️',
+                messages: [
+                    'Caution! The ground ahead is uneven and irregular. Walk very slowly and carefully to maintain your balance.',
+                    'Warning! Irregular surface detected ahead. Please take small, deliberate steps and watch your footing closely.',
+                    'Alert! The floor is not level in front of you. Move with extreme care to prevent tripping or falling.'
+                ]
+            },
+            {
+                item: 'Wet floor detected',
+                risk: 'HIGH',
+                icon: '💧',
+                messages: [
+                    'Danger! Wet floor ahead. The surface is slippery. Please walk very slowly and carefully to avoid falling.',
+                    'Warning! Slippery surface detected. Take small steps and hold onto nearby support if available.',
+                    'Caution! Wet area ahead. Please proceed with extreme care or find an alternate route if possible.'
+                ]
+            },
+            // MEDIUM RISK (30%)
+            {
+                item: 'Person nearby',
+                risk: 'MEDIUM',
+                icon: '👤',
+                messages: [
+                    'Notice: Someone is nearby on your left or right. Please be aware of their presence as you move forward.',
+                    'Heads up! Another person is in the immediate area. Move carefully to avoid any collision or bumping.',
+                    'Attention! A person is close by. Please proceed slowly and be mindful of others around you.'
+                ]
+            },
+            {
+                item: 'Vehicle approaching',
+                risk: 'MEDIUM',
+                icon: '🚗',
+                messages: [
+                    'Notice: A vehicle is approaching from nearby. Please stay alert and wait for it to pass safely.',
+                    'Attention! Car detected in the vicinity. Please be cautious and remain in a safe area away from traffic.',
+                    'Heads up! Vehicle nearby. Please be aware of your surroundings and proceed with caution.'
+                ]
+            },
+            {
+                item: 'Narrow passage',
+                risk: 'MEDIUM',
+                icon: '↔️',
+                messages: [
+                    'Notice: The path ahead narrows. Please slow down and move carefully through the confined space.',
+                    'Attention! Narrow area detected. Take your time and be mindful of objects on both sides.',
+                    'Heads up! Limited space ahead. Please proceed slowly and use your hands to guide yourself if needed.'
+                ]
+            },
+            {
+                item: 'Low ceiling ahead',
+                risk: 'MEDIUM',
+                icon: '⬇️',
+                messages: [
+                    'Caution: Low ceiling or overhang detected ahead. Please duck down or proceed carefully to avoid hitting your head.',
+                    'Notice: Overhead obstruction ahead. Please be aware and lower your head as you move forward.',
+                    'Attention: Low clearance area. Please move slowly and be mindful of the space above you.'
+                ]
+            },
+            // SAFE (40%)
+            {
+                item: 'Clear path',
+                risk: 'SAFE',
+                icon: '✅',
+                messages: [
+                    'Excellent news! The path ahead is completely clear and safe. You may proceed confidently at your comfortable pace.',
+                    'All clear! No obstacles or hazards detected in your path. You can move forward safely and comfortably.',
+                    'Safe to proceed! The way is clear and open. Walk comfortably and enjoy your journey with confidence.'
+                ]
+            },
+            {
+                item: 'Open space',
+                risk: 'SAFE',
+                icon: '🌟',
+                messages: [
+                    'Perfect! You are in a wide, open, and safe area. Feel free to move around comfortably in any direction.',
+                    'Great! The environment is clear and spacious with no hazards. You can navigate freely and safely.',
+                    'Excellent! Wide open space detected with plenty of room. You have complete freedom to move safely.'
+                ]
+            },
+            {
+                item: 'Smooth pathway',
+                risk: 'SAFE',
+                icon: '🛤️',
+                messages: [
+                    'Good news! The path ahead is smooth and level. You can walk comfortably without any concerns.',
+                    'All clear! Smooth, even surface detected. You may proceed at your normal, comfortable walking pace.',
+                    'Safe to go! The pathway is in excellent condition. Walk confidently and enjoy your surroundings.'
+                ]
+            },
+            {
+                item: 'Well-lit area',
+                risk: 'SAFE',
+                icon: '💡',
+                messages: [
+                    'Excellent! You are in a well-lit, safe area. The environment is clear and easy to navigate.',
+                    'Great! Good lighting detected. The area is safe and you can move comfortably.',
+                    'Perfect! Bright, safe environment. You can proceed confidently with excellent visibility.'
+                ]
+            }
+        ];
+
+        let scanHistory = [];
+        let currentResult = null;
+        let isScanning = false;
+
+        async function startScan() {
+            if (isScanning) return;
+            isScanning = true;
+            
+            const scanBtn = document.getElementById('scanBtn');
+            const cameraContent = document.getElementById('cameraContent');
+            const cameraView = document.getElementById('cameraView');
+            const resultsSection = document.getElementById('resultsSection');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const voiceTextDisplay = document.getElementById('voiceTextDisplay');
+            
+            // Hide voice text display
+            voiceTextDisplay.classList.add('hidden');
+            
+            // Disable button
+            scanBtn.disabled = true;
+            scanBtn.classList.remove('pulse');
+            scanBtn.innerHTML = '<span class="relative flex items-center justify-center gap-6"><span class="text-7xl animate-spin leading-none">🔄</span><span>Scanning...</span></span>';
+            
+            // Hide results
+            resultsSection.classList.add('hidden');
+            
+            // Show progress bar
+            progressContainer.classList.remove('hidden');
+            progressBar.style.width = '0%';
+            
+            // Update camera view
+            cameraContent.innerHTML = `
+                <div class="relative inline-block mb-8">
+                    <div class="absolute inset-0 bg-cyan-400 blur-[80px] opacity-70 animate-pulse"></div>
+                    <span class="relative text-[100px] animate-pulse leading-none">🔍</span>
+                </div>
+                <p class="text-5xl font-black text-white mb-4">Analyzing Environment</p>
+                <p class="text-3xl text-cyan-200 font-light">AI Processing in Progress...</p>
+            `;
+            
+            // Add scanning line
+            const scanLine = document.createElement('div');
+            scanLine.className = 'scan-line';
+            cameraView.appendChild(scanLine);
+            
+            // Realistic progress animation (3.5 seconds)
+            await animateProgress(progressBar);
+            
+            // Perform detection
+            await new Promise(resolve => setTimeout(resolve, 600));
+            performDetection();
+            
+            // Remove scan line
+            scanLine.remove();
+            
+            // Success state
+            cameraContent.innerHTML = `
+                <div class="relative inline-block mb-8">
+                    <div class="absolute inset-0 bg-green-400 blur-[80px] opacity-70"></div>
+                    <span class="relative text-[100px] leading-none">✅</span>
+                </div>
+                <p class="text-5xl font-black text-white mb-4">Scan Complete</p>
+                <p class="text-3xl text-green-200 font-light">Results are ready</p>
+            `;
+            
+            // Hide progress bar
+            setTimeout(() => {
+                progressContainer.classList.add('hidden');
+                progressBar.style.width = '0%';
+            }, 600);
+            
+            // Reset button
+            scanBtn.disabled = false;
+            scanBtn.classList.add('pulse');
+            scanBtn.innerHTML = '<span class="relative flex items-center justify-center gap-6"><span class="text-7xl leading-none">📸</span><span>Scan Environment</span></span>';
+            
+            // Reset camera after delay
+            setTimeout(() => {
+                cameraContent.innerHTML = `
+                    <div class="relative inline-block mb-8">
+                        <div class="absolute inset-0 bg-cyan-400 blur-[80px] opacity-60"></div>
+                        <span class="relative text-[100px] leading-none">📸</span>
+                    </div>
+                    <p class="text-5xl font-black text-white mb-4">Ready to Scan</p>
+                    <p class="text-3xl text-cyan-200 font-light">Press the button below to analyze your environment</p>
+                `;
+            }, 3500);
+            
+            isScanning = false;
+        }
+
+        async function animateProgress(progressBar) {
+            const steps = [0, 20, 40, 60, 75, 90, 100];
+            const delays = [0, 500, 600, 700, 600, 500, 400];
+            
+            for (let i = 0; i < steps.length; i++) {
+                await new Promise(resolve => setTimeout(resolve, delays[i]));
+                progressBar.style.width = steps[i] + '%';
+            }
+        }
+
+        function performDetection() {
+            // Weighted random selection for better distribution
+            const rand = Math.random();
+            let selectedIndex;
+            
+            if (rand < 0.3) {
+                // 30% HIGH RISK (indices 0-3)
+                selectedIndex = Math.floor(Math.random() * 4);
+            } else if (rand < 0.6) {
+                // 30% MEDIUM RISK (indices 4-7)
+                selectedIndex = 4 + Math.floor(Math.random() * 4);
+            } else {
+                // 40% SAFE (indices 8-11)
+                selectedIndex = 8 + Math.floor(Math.random() * 4);
+            }
+            
+            const detection = detectionOptions[selectedIndex];
+            const messageIndex = Math.floor(Math.random() * detection.messages.length);
+            const message = detection.messages[messageIndex];
+            
+            // Timestamp
+            const timestamp = new Date();
+            const timeString = timestamp.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            });
+            
+            // Create result
+            currentResult = {
+                scanNumber: scanHistory.length + 1,
+                timestamp: timestamp,
+                timeString: timeString,
+                detectedItem: detection.item,
+                icon: detection.icon,
+                riskLevel: detection.risk,
+                message: message
+            };
+            
+            // Add to history
+            scanHistory.unshift(currentResult);
+            
+            // Display
+            displayResults(currentResult);
+            updateHistory();
+        }
+
+        function displayResults(result) {
+            const resultsSection = document.getElementById('resultsSection');
+            const riskBadge = document.getElementById('riskBadge');
+            const detectedItem = document.getElementById('detectedItem');
+            const detectionTime = document.getElementById('detectionTime');
+            const safetyMessage = document.getElementById('safetyMessage');
+            
+            // Show results with premium animation
+            resultsSection.classList.remove('hidden');
+            resultsSection.classList.add('results-reveal');
+            
+            // Risk badge styling with glowing border
+            let badgeColor, badgeText;
+            if (result.riskLevel === 'HIGH') {
+                badgeColor = 'bg-gradient-to-r from-red-600 via-red-500 to-red-600 text-white';
+                badgeText = '⚠️ HIGH RISK';
+            } else if (result.riskLevel === 'MEDIUM') {
+                badgeColor = 'bg-gradient-to-r from-orange-600 via-orange-500 to-orange-600 text-white';
+                badgeText = '⚡ MEDIUM RISK';
+            } else {
+                badgeColor = 'bg-gradient-to-r from-green-600 via-green-500 to-green-600 text-white';
+                badgeText = '✅ SAFE';
+            }
+            
+            riskBadge.className = `risk-badge inline-block px-16 py-10 rounded-[2rem] text-6xl font-black shadow-2xl ${badgeColor}`;
+            riskBadge.textContent = badgeText;
+            
+            // Details
+            detectedItem.textContent = result.detectedItem;
+            detectionTime.textContent = result.timeString;
+            safetyMessage.textContent = result.message;
+            
+            // Smooth scroll
+            setTimeout(() => {
+                resultsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 200);
+        }
+
+        async function playVoice() {
+            if (!currentResult) return;
+            
+            const voiceBtn = document.getElementById('voiceBtn');
+            const voiceBtnText = document.getElementById('voiceBtnText');
+            const waveform = document.getElementById('waveform');
+            const voiceTextDisplay = document.getElementById('voiceTextDisplay');
+            const voiceText = document.getElementById('voiceText');
+            
+            voiceBtn.disabled = true;
+            voiceBtnText.textContent = 'Speaking...';
+            waveform.classList.remove('hidden');
+            
+            // Show voice text display with animation
+            voiceText.textContent = currentResult.message;
+            voiceTextDisplay.classList.remove('hidden');
+            voiceTextDisplay.classList.add('voice-text-display');
+            
+            // Realistic voice duration based on message length (longer animation)
+            const wordsPerSecond = 2.5; // Slower, more realistic speech
+            const words = currentResult.message.split(' ').length;
+            const duration = Math.max(4000, (words / wordsPerSecond) * 1000);
+            
+            await new Promise(resolve => setTimeout(resolve, duration));
+            
+            voiceBtn.disabled = false;
+            voiceBtnText.textContent = 'Play Voice Announcement';
+            waveform.classList.add('hidden');
+        }
+
+        function updateHistory() {
+            const historyList = document.getElementById('historyList');
+            const scanCount = document.getElementById('scanCount');
+            
+            scanCount.textContent = `${scanHistory.length} scan${scanHistory.length !== 1 ? 's' : ''}`;
+            
+            if (scanHistory.length === 0) {
+                historyList.innerHTML = `
+                    <div class="text-center py-20">
+                        <span class="text-[100px] mb-8 block opacity-30 leading-none">📋</span>
+                        <p class="text-4xl text-gray-400 font-bold">No scans yet</p>
+                        <p class="text-2xl text-gray-500 mt-4 font-medium">Click "Scan Environment" to begin analyzing</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            historyList.innerHTML = scanHistory.map((scan, index) => {
+                let badgeColor, badgeIcon;
+                if (scan.riskLevel === 'HIGH') {
+                    badgeColor = 'bg-red-600';
+                    badgeIcon = '⚠️';
+                } else if (scan.riskLevel === 'MEDIUM') {
+                    badgeColor = 'bg-orange-500';
+                    badgeIcon = '⚡';
+                } else {
+                    badgeColor = 'bg-green-600';
+                    badgeIcon = '✅';
+                }
+                
+                return `
+                    <div class="history-card glass rounded-[2rem] p-10 flex items-center justify-between gap-8" style="animation-delay: ${index * 0.1}s;">
+                        <div class="flex items-center gap-8 flex-1">
+                            <span class="text-7xl leading-none">${scan.icon}</span>
+                            <div class="flex-1">
+                                <div class="flex items-center gap-5 mb-4">
+                                    <span class="text-3xl font-black text-cyan-400">#${scan.scanNumber}</span>
+                                    <span class="text-2xl text-gray-400 font-semibold">${scan.timeString}</span>
+                                </div>
+                                <p class="text-4xl font-black">${scan.detectedItem}</p>
+                            </div>
+                        </div>
+                        <div class="${badgeColor} px-10 py-5 rounded-2xl text-3xl font-black flex items-center gap-4 shadow-xl">
+                            <span>${badgeIcon}</span>
+                            <span>${scan.riskLevel}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    </script>
+</body>
+</html>

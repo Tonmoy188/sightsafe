@@ -1,0 +1,2782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=5.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0a0a0a">
+    <meta name="description" content="SightSafe - AI Accessibility Assistant for Visually Impaired Seniors">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>SightSafe - AI Accessibility Assistant</title>
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiU2lnaHRTYWZlIiwic2hvcnRfbmFtZSI6IlNpZ2h0U2FmZSIsInN0YXJ0X3VybCI6Ii8iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3IiOiIjMGEwYTBhIiwidGhlbWVfY29sb3IiOiIjMGEwYTBhIn0=">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #000000;
+            --text-primary: #ffffff;
+            --accent-safe: #00ff88;
+            --accent-medium: #ffaa00;
+            --accent-high: #ff3366;
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --easing: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        html {
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            overflow-y: auto;
+            min-height: 100vh;
+            height: 100%;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            max-width: 100%;
+            width: 100%;
+            margin: 0 auto;
+            padding: 0 20px;
+            min-height: auto;
+        }
+
+        @media (min-width: 800px) {
+            .container {
+                max-width: 800px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 0 15px;
+            }
+        }
+
+        /* Header */
+        header {
+            padding: 24px 0;
+            padding-top: max(24px, env(safe-area-inset-top));
+            padding-bottom: max(24px, env(safe-area-inset-bottom));
+            position: sticky;
+            top: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 100;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            width: 100%;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -1px;
+            background: linear-gradient(90deg, #00ccff 0%, #00ff88 50%, #00ccff 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 4s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% center; }
+            50% { background-position: 100% center; }
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent-safe);
+            box-shadow: 0 0 10px var(--accent-safe);
+            animation: statusPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes statusPulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.6;
+                transform: scale(1.1);
+            }
+        }
+
+        /* Camera Preview */
+        .camera-section {
+            margin: 40px 0;
+        }
+
+        .camera-preview {
+            width: 100%;
+            height: 400px;
+            background: rgba(15, 15, 15, 0.4);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 600px) {
+            .camera-preview {
+                height: 300px;
+                border-radius: 12px;
+                margin: 15px 0;
+            }
+        }
+
+        @media (min-width: 1200px) {
+            .camera-preview {
+                height: 500px;
+            }
+        }
+
+        .camera-placeholder {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .camera-placeholder svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        #cameraVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+
+        #cameraVideo.active {
+            display: block;
+        }
+
+        .camera-error {
+            text-align: center;
+            color: var(--accent-high);
+            padding: 20px;
+            display: none;
+        }
+
+        .camera-error.show {
+            display: block;
+        }
+
+        .camera-error svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 12px;
+        }
+
+        .retry-button {
+            margin-top: 16px;
+            padding: 12px 24px;
+            background: var(--accent-high);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s var(--easing);
+        }
+
+        .retry-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(255, 51, 102, 0.4);
+        }
+
+        .retry-button:active {
+            transform: scale(0.98);
+        }
+
+        /* Scanning animations */
+        .scanning-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        .camera-preview.scanning .scanning-overlay {
+            opacity: 1;
+        }
+
+        .camera-preview.scanning .scanning-overlay::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--accent-safe), transparent);
+            box-shadow: 0 0 20px var(--accent-safe);
+            animation: scanLine 2.5s ease-in-out infinite;
+        }
+
+        @keyframes scanLine {
+            0% { transform: translateY(0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(400px); opacity: 0; }
+        }
+
+        .camera-preview.scanning .scanning-overlay::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                repeating-linear-gradient(0deg, transparent, transparent 19px, rgba(0, 255, 136, 0.1) 19px, rgba(0, 255, 136, 0.1) 20px),
+                repeating-linear-gradient(90deg, transparent, transparent 19px, rgba(0, 255, 136, 0.1) 19px, rgba(0, 255, 136, 0.1) 20px);
+            animation: gridPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes gridPulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.6; }
+        }
+
+        /* Scan Button */
+        .scan-button {
+            width: 100%;
+            height: 70px;
+            min-height: 60px;
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00ff88 0%, #00ccff 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s var(--easing);
+            margin-top: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 20px rgba(0, 255, 136, 0.2);
+            padding: 16px 20px;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        @media (max-width: 600px) {
+            .scan-button {
+                min-height: 56px;
+                padding: 14px 18px;
+                font-size: 18px;
+                border-radius: 10px;
+            }
+        }
+
+        @media (min-width: 1200px) {
+            .scan-button {
+                min-height: 70px;
+                padding: 18px 24px;
+                font-size: 26px;
+            }
+        }
+
+        .scan-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.4);
+        }
+
+        .scan-button:active {
+            transform: scale(0.98);
+        }
+
+        .scan-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Results Section */
+        .results-section {
+            margin: 40px 0;
+            padding: 32px;
+            background: rgba(15, 15, 15, 0.4);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 16px;
+            display: none;
+        }
+
+        .results-section.show {
+            display: block;
+            animation: slideUp 0.6s var(--easing);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 24px;
+            gap: 16px;
+        }
+
+        .result-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .risk-badge {
+            padding: 24px 40px;
+            border-radius: 20px;
+            font-size: 48px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .risk-high {
+            background: var(--accent-high);
+            color: white;
+            box-shadow: 0 0 40px rgba(255, 51, 102, 0.5);
+        }
+
+        .risk-medium {
+            background: var(--accent-medium);
+            color: #000;
+            box-shadow: 0 0 40px rgba(255, 170, 0, 0.5);
+        }
+
+        .risk-safe {
+            background: var(--accent-safe);
+            color: #000;
+            box-shadow: 0 0 40px rgba(0, 255, 136, 0.5);
+        }
+
+        .result-item {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            line-height: 1.3;
+            text-align: center;
+        }
+
+        .result-message {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+            margin-bottom: 24px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        /* Voice Command Button */
+        .voice-command-button {
+            width: 100%;
+            padding: 16px 24px;
+            background: rgba(15, 15, 15, 0.4);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s var(--easing);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .voice-command-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+        }
+
+        .voice-command-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .voice-command-button.listening {
+            border-color: var(--accent-high);
+            background: rgba(255, 51, 102, 0.1);
+            animation: pulse-border 1.5s infinite;
+        }
+
+        @keyframes pulse-border {
+            0%, 100% { border-color: #ff3366; }
+            50% { border-color: #ff6699; }
+        }
+
+        .voice-status {
+            padding: 12px 20px;
+            background: rgba(15, 15, 15, 0.4);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .voice-status.active {
+            background: rgba(255, 51, 102, 0.1);
+            border-color: var(--accent-high);
+            color: var(--text-primary);
+        }
+
+        .voice-status.success {
+            background: rgba(0, 255, 136, 0.1);
+            border-color: var(--accent-safe);
+            color: var(--accent-safe);
+        }
+
+        .voice-status.wake-word {
+            background: rgba(0, 204, 255, 0.1);
+            border-color: #00ccff;
+            color: #00ccff;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .recognized-text {
+            font-style: italic;
+            color: var(--accent-safe);
+            margin-top: 4px;
+        }
+
+        /* Haptic Toggle */
+        .haptic-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: rgba(15, 15, 15, 0.4);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            cursor: pointer;
+            transition: all 0.2s var(--easing);
+        }
+
+        .haptic-toggle:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(2px);
+        }
+
+        .haptic-toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+
+        .haptic-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            transition: background 0.3s var(--easing);
+        }
+
+        .haptic-switch.active {
+            background: var(--accent-safe);
+        }
+
+        .haptic-switch-knob {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s var(--easing);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .haptic-switch.active .haptic-switch-knob {
+            transform: translateX(20px);
+        }
+
+        .voice-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 16px 24px;
+            background: linear-gradient(135deg, #00ccff 0%, #0099ff 100%);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s var(--easing);
+            width: 100%;
+            height: 60px;
+            min-height: 60px;
+            font-size: 20px;
+            font-weight: 700;
+            color: white;
+            box-shadow: 0 4px 20px rgba(0, 204, 255, 0.2);
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        @media (max-width: 600px) {
+            .voice-button {
+                min-height: 56px;
+                padding: 14px 18px;
+                font-size: 16px;
+                border-radius: 10px;
+            }
+        }
+
+        @media (min-width: 1200px) {
+            .voice-button {
+                min-height: 70px;
+                padding: 18px 24px;
+                font-size: 22px;
+            }
+        }
+
+        /* Remove tap highlight for mobile */
+        button:focus {
+            outline: 2px solid var(--accent-safe);
+            outline-offset: 2px;
+        }
+
+        button:focus-visible {
+            outline: 3px solid var(--accent-safe);
+            outline-offset: 3px;
+        }
+
+        .voice-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(0, 204, 255, 0.4);
+        }
+
+        .voice-button:active {
+            transform: scale(0.98);
+        }
+
+        .voice-icon {
+            width: 24px;
+            height: 24px;
+        }
+
+        .waveform {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            height: 24px;
+        }
+
+        .waveform span {
+            width: 4px;
+            background: white;
+            border-radius: 2px;
+            animation: wave 1s ease-in-out infinite;
+        }
+
+        .waveform span:nth-child(1) { animation-delay: 0s; height: 8px; }
+        .waveform span:nth-child(2) { animation-delay: 0.1s; height: 12px; }
+        .waveform span:nth-child(3) { animation-delay: 0.2s; height: 16px; }
+        .waveform span:nth-child(4) { animation-delay: 0.3s; height: 12px; }
+        .waveform span:nth-child(5) { animation-delay: 0.4s; height: 8px; }
+
+        @keyframes wave {
+            0%, 100% { transform: scaleY(0.5); }
+            50% { transform: scaleY(1.5); }
+        }
+
+        .waveform.hidden {
+            display: none;
+        }
+
+        /* History Section */
+        .history-section {
+            margin: 40px 0;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .history-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 60px;
+            padding: 16px 20px;
+            background: rgba(15, 15, 15, 0.4);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 12px;
+            transition: all 0.2s var(--easing);
+            cursor: pointer;
+        }
+
+        .history-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(4px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .history-item-content {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex: 1;
+        }
+
+        .history-number {
+            font-size: 14px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.5);
+            min-width: 30px;
+        }
+
+        .history-time {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            min-width: 80px;
+        }
+
+        .history-detection {
+            font-size: 16px;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .history-delete {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 51, 102, 0.1);
+            border: 1px solid rgba(255, 51, 102, 0.3);
+            border-radius: 8px;
+            color: var(--accent-high);
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s var(--easing);
+        }
+
+        .history-delete:hover {
+            background: var(--accent-high);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        /* Stats Section */
+        .stats-section {
+            margin: 40px 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 16px;
+        }
+
+        .stat-card {
+            padding: 24px;
+            background: rgba(15, 15, 15, 0.4);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.2s var(--easing);
+        }
+
+        .stat-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0.7) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Splash Screen (Loading) */
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+
+        .splash-screen.fade-out {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .splash-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .splash-title {
+            font-size: 64px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: -2px;
+            background: linear-gradient(135deg, #00ff88 0%, #00ccff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .splash-robot {
+            font-size: 80px;
+            margin-bottom: 24px;
+            animation: bounce 1s ease-in-out infinite;
+        }
+
+        .splash-subtitle {
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 32px;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .splash-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #00ff88;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Welcome Screen */
+        .welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-primary);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .welcome-screen.fade-out {
+            animation: fadeOut 0.5s ease-out forwards;
+        }
+
+        @keyframes fadeOut {
+            to { opacity: 0; pointer-events: none; }
+        }
+
+        .welcome-content {
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .welcome-title {
+            font-size: 56px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: -2px;
+            background: linear-gradient(135deg, #00ff88 0%, #00ccff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .welcome-subtitle {
+            font-size: 22px;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 32px;
+            font-weight: 500;
+        }
+
+        .welcome-description {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.8;
+            margin-bottom: 32px;
+        }
+
+        .welcome-features {
+            text-align: left;
+            margin-bottom: 40px;
+        }
+
+        .welcome-feature {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .welcome-feature-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .welcome-button {
+            width: 100%;
+            height: 60px;
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00ff88 0%, #00ccff 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s var(--easing);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 20px rgba(0, 255, 136, 0.3);
+        }
+
+        .welcome-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 255, 136, 0.4);
+        }
+
+        .welcome-button:active {
+            transform: scale(0.98);
+        }
+
+        /* Clear History Button */
+        .clear-history-button {
+            width: 100%;
+            padding: 16px;
+            margin-top: 16px;
+            font-size: 14px;
+            font-weight: 600;
+            background: transparent;
+            color: var(--accent-high);
+            border: 1px solid var(--accent-high);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s var(--easing);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .clear-history-button:hover {
+            background: rgba(255, 51, 102, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(255, 51, 102, 0.3);
+        }
+
+        .clear-history-button:active {
+            transform: scale(0.98);
+        }
+
+        /* Footer */
+        footer {
+            padding: 40px 0;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+            border-top: 1px solid var(--glass-border);
+            margin-top: 60px;
+        }
+
+        footer p {
+            margin: 4px 0;
+        }
+
+        /* Focus states for accessibility */
+        button:focus-visible,
+        .voice-command-button:focus-visible,
+        .haptic-toggle:focus-visible {
+            outline: 2px solid var(--accent-safe);
+            outline-offset: 2px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 999px) {
+            .container {
+                max-width: 700px;
+            }
+        }
+
+        @media (max-width: 599px) {
+            .container {
+                padding: 0 16px;
+            }
+
+            h1 {
+                font-size: 28px;
+            }
+
+            .camera-preview {
+                height: 350px;
+            }
+
+            .scan-button {
+                height: 64px;
+                font-size: 22px;
+            }
+
+            .risk-badge {
+                font-size: 40px;
+                padding: 20px 32px;
+            }
+
+            .result-item {
+                font-size: 18px;
+            }
+
+            .result-message {
+                font-size: 16px;
+                padding: 16px;
+            }
+
+            .voice-button {
+                height: 56px;
+                font-size: 18px;
+            }
+
+            .welcome-title {
+                font-size: 42px;
+            }
+
+            .welcome-subtitle {
+                font-size: 18px;
+            }
+
+            .stat-value {
+                font-size: 28px;
+            }
+
+            .history-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .history-item-content {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+
+            .history-delete {
+                position: absolute;
+                top: 12px;
+                right: 12px;
+            }
+        }
+
+        @media (min-width: 1000px) {
+            body {
+                font-size: 18px;
+            }
+
+            .scan-button {
+                font-size: 26px;
+            }
+
+            .voice-button {
+                font-size: 22px;
+            }
+        }
+
+        /* Reduced motion for accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+
+        /* Mobile & Tablet Optimizations */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 24px;
+            }
+            
+            .status {
+                font-size: 12px;
+            }
+            
+            .camera-section {
+                margin: 20px 0;
+            }
+            
+            .results-section {
+                padding: 15px;
+                border-radius: 12px;
+            }
+            
+            .history-item {
+                padding: 12px;
+                margin-bottom: 10px;
+            }
+        }
+
+        /* Landscape orientation fix */
+        @media (max-height: 600px) {
+            header {
+                padding: 12px 0;
+            }
+            
+            .camera-preview {
+                height: 200px;
+            }
+            
+            .scan-button, .voice-button {
+                padding: 10px 16px;
+                font-size: 14px;
+                min-height: 44px;
+            }
+        }
+
+        /* PC / Desktop Optimizations */
+        @media (min-width: 1200px) {
+            body {
+                font-size: 16px;
+            }
+            
+            h1 {
+                font-size: 36px;
+            }
+            
+            .container {
+                max-width: 900px;
+            }
+            
+            .camera-preview {
+                height: 600px;
+            }
+        }
+
+        /* Prevent text selection on buttons */
+        button {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        /* Fix for iPhone notch */
+        @supports (padding: max(0px)) {
+            header {
+                padding-left: max(16px, env(safe-area-inset-left));
+                padding-right: max(16px, env(safe-area-inset-right));
+            }
+        }
+        }
+    </style>
+</head>
+<body>
+    <!-- Splash Screen (Loading) -->
+    <div class="splash-screen" id="splashScreen">
+        <div class="splash-robot">🤖</div>
+        <div class="splash-title">SightSafe</div>
+        <div class="splash-subtitle">AI Vision Assistant</div>
+        <div class="splash-spinner"></div>
+    </div>
+
+    <!-- Welcome Screen -->
+    <div class="welcome-screen" id="welcomeScreen" style="display: none;">
+        <div class="welcome-content">
+            <div class="welcome-title">🤖 SightSafe</div>
+            <div class="welcome-subtitle">AI Vision Assistant for Seniors</div>
+            <div class="welcome-description">
+                Navigate your environment safely with AI-powered obstacle detection and voice guidance designed specifically for visually impaired seniors.
+            </div>
+            <div class="welcome-features">
+                <div class="welcome-feature">
+                    <span class="welcome-feature-icon">📸</span>
+                    <span>Real-time environment scanning</span>
+                </div>
+                <div class="welcome-feature">
+                    <span class="welcome-feature-icon">🔊</span>
+                    <span>Clear voice announcements</span>
+                </div>
+                <div class="welcome-feature">
+                    <span class="welcome-feature-icon">⚠️</span>
+                    <span>Instant hazard detection</span>
+                </div>
+            </div>
+            <button class="welcome-button" id="welcomeButton">Start Using SightSafe</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1>SightSafe</h1>
+                <div class="status">
+                    <span class="status-dot"></span>
+                    <span>Ready</span>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <!-- Voice Command Section -->
+            <section style="margin: 24px 0;">
+                <button class="voice-command-button" id="voiceCommandButton">
+                    <span id="voiceCommandIcon">🎤</span>
+                    <span id="voiceCommandText">Enable Voice Commands</span>
+                </button>
+                <div class="voice-status" id="voiceStatus" style="display: none;">
+                    <div id="voiceStatusText">Ready</div>
+                    <div class="recognized-text" id="recognizedText"></div>
+                </div>
+                
+                <!-- Haptic Feedback Toggle -->
+                <div class="haptic-toggle" id="hapticToggle">
+                    <div class="haptic-toggle-label">
+                        <span>📳</span>
+                        <span>Haptic Feedback</span>
+                    </div>
+                    <div class="haptic-switch" id="hapticSwitch">
+                        <div class="haptic-switch-knob"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="camera-section">
+                <div class="camera-preview" id="cameraPreview">
+                    <div class="camera-placeholder" id="cameraPlaceholder">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                            <circle cx="12" cy="13" r="4"></circle>
+                        </svg>
+                        <div>Camera Ready</div>
+                    </div>
+                    <video id="cameraVideo" autoplay playsinline muted></video>
+                    <div class="camera-error" id="cameraError">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        <div id="errorMessage">Camera error</div>
+                        <button class="retry-button" id="retryButton">Try Again</button>
+                    </div>
+                    <div class="scanning-overlay"></div>
+                </div>
+                <button class="scan-button" id="scanButton">Scan Environment</button>
+            </section>
+
+            <section class="results-section" id="resultsSection">
+                <div class="result-header">
+                    <div class="result-title">Detection Results</div>
+                    <span class="risk-badge" id="riskBadge">SAFE</span>
+                </div>
+                <div class="result-item" id="resultItem">Clear path</div>
+                <div class="result-message" id="resultMessage">
+                    Good news! The path ahead is clear and safe. You may proceed confidently.
+                </div>
+                <button class="voice-button" id="voiceButton">
+                    <span id="voiceText">🔊 Hear Message</span>
+                    <div class="waveform hidden" id="waveform">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </button>
+            </section>
+
+            <section class="stats-section">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalScans">0</div>
+                    <div class="stat-label">Total Scans</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="highRisk">0</div>
+                    <div class="stat-label">High Risk</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="mediumRisk">0</div>
+                    <div class="stat-label">Medium Risk</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="safeCount">0</div>
+                    <div class="stat-label">Safe</div>
+                </div>
+            </section>
+
+            <section class="history-section">
+                <h2 class="section-title">Recent Scans</h2>
+                <div class="history-list" id="historyList">
+                    <div class="history-item" style="opacity: 0.3;">
+                        <div class="history-time">No scans yet</div>
+                        <div class="history-detection">Start your first scan</div>
+                    </div>
+                </div>
+                <button class="clear-history-button" id="clearHistoryButton">🗑️ Clear All History</button>
+            </section>
+        </main>
+
+        <footer>
+            <p>SightSafe - AI Accessibility Assistant</p>
+            <p style="margin-top: 8px; opacity: 0.6;">Made with Bob</p>
+        </footer>
+    </div>
+
+    <script>
+        // Detection options with risk levels (from app.js)
+        const detectionOptions = [
+            { item: 'Obstacle ahead', risk: 'HIGH', messages: [
+                'Caution! There is an obstacle in your path. Please stop and navigate carefully around it.',
+                'Warning! An object is blocking your way. Take your time and move slowly to avoid it.',
+                'Alert! Something is ahead of you. Please proceed with extra care or ask for assistance.'
+            ]},
+            { item: 'Stairs detected', risk: 'HIGH', messages: [
+                'Important! Stairs are ahead. Please use the handrail and take one step at a time.',
+                'Caution! Steps detected in front of you. Hold the railing firmly and move carefully.',
+                'Warning! Stairway ahead. Please be very careful and consider asking for help if needed.'
+            ]},
+            { item: 'Clear path', risk: 'SAFE', messages: [
+                'Good news! The path ahead is clear and safe. You may proceed confidently.',
+                'All clear! No obstacles detected. You can move forward safely at your own pace.',
+                'Safe to proceed! The way is clear. Walk comfortably and enjoy your journey.'
+            ]},
+            { item: 'Person nearby', risk: 'MEDIUM', messages: [
+                'Notice: Someone is nearby. Please be aware of their presence as you move.',
+                'Heads up! Another person is in the area. Move carefully to avoid any collision.',
+                'Attention! A person is close by. Please proceed slowly and be mindful of others.'
+            ]},
+            { item: 'Uneven surface', risk: 'HIGH', messages: [
+                'Caution! The ground ahead is uneven. Walk slowly and carefully to maintain balance.',
+                'Warning! Irregular surface detected. Please take small steps and watch your footing.',
+                'Alert! The floor is not level ahead. Move very carefully to prevent tripping or falling.'
+            ]}
+        ];
+
+        // State management
+        let scanHistory = [];
+        let stats = { total: 0, high: 0, medium: 0, safe: 0 };
+        let isScanning = false;
+        let isPlayingVoice = false;
+        let currentMessage = '';
+        let isListening = false;
+        let recognition = null;
+        let wakeWordRecognition = null;
+        let hapticEnabled = true;
+        let isWakeWordMode = false;
+        let commandTimeout = null;
+        let lastSafetyMessage = '';
+        let audioContext = null;
+
+        // DOM elements
+        const scanButton = document.getElementById('scanButton');
+        const voiceCommandButton = document.getElementById('voiceCommandButton');
+        const voiceCommandText = document.getElementById('voiceCommandText');
+        const voiceCommandIcon = document.getElementById('voiceCommandIcon');
+        const voiceStatus = document.getElementById('voiceStatus');
+        const voiceStatusText = document.getElementById('voiceStatusText');
+        const recognizedText = document.getElementById('recognizedText');
+        const hapticToggle = document.getElementById('hapticToggle');
+        const hapticSwitch = document.getElementById('hapticSwitch');
+        const cameraPreview = document.getElementById('cameraPreview');
+        const resultsSection = document.getElementById('resultsSection');
+        const riskBadge = document.getElementById('riskBadge');
+        const resultItem = document.getElementById('resultItem');
+        const resultMessage = document.getElementById('resultMessage');
+        const voiceButton = document.getElementById('voiceButton');
+        const voiceText = document.getElementById('voiceText');
+        const waveform = document.getElementById('waveform');
+        const historyList = document.getElementById('historyList');
+        const totalScans = document.getElementById('totalScans');
+        const highRisk = document.getElementById('highRisk');
+        const mediumRisk = document.getElementById('mediumRisk');
+        const safeCount = document.getElementById('safeCount');
+        let cameraStream = null;
+
+        // Camera DOM elements
+        const cameraVideo = document.getElementById('cameraVideo');
+        const cameraPlaceholder = document.getElementById('cameraPlaceholder');
+        const cameraError = document.getElementById('cameraError');
+        const errorMessage = document.getElementById('errorMessage');
+        const retryButton = document.getElementById('retryButton');
+
+        // Create hidden canvas for image analysis
+        const analysisCanvas = document.createElement('canvas');
+        const analysisCtx = analysisCanvas.getContext('2d');
+        let previousFrameData = null;
+
+        // Initialize Web Audio API for beeps
+        function initAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // Play beep sound
+        function playBeep(frequency = 400, duration = 200, type = 'sine') {
+            try {
+                initAudioContext();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = frequency;
+                oscillator.type = type;
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + duration / 1000);
+            } catch (e) {
+                console.log('Audio not available:', e);
+            }
+        }
+
+        // Play confirmation beep
+        function playConfirmationBeep() {
+            playBeep(600, 150);
+        }
+
+        // Play success beep (double beep)
+        function playSuccessBeep() {
+            playBeep(600, 150);
+            setTimeout(() => playBeep(800, 150), 200);
+        }
+
+        // Play error beep (lower pitch)
+        function playErrorBeep() {
+            playBeep(300, 300);
+            setTimeout(() => vibrate([100, 100, 100]), 0);
+        }
+
+        // Play ding sound (positive)
+        function playDingSound() {
+            playBeep(800, 100);
+            setTimeout(() => playBeep(1000, 100), 120);
+        }
+
+        // Play soft chime
+        function playSoftChime() {
+            playBeep(500, 100);
+        }
+
+        // Start camera
+        async function startCamera() {
+            try {
+                // Check if getUserMedia is supported
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('UNSUPPORTED');
+                }
+
+                // BUG FIX 1: Request camera access - prefer BACK camera on mobile for environment scanning
+                const constraints = {
+                    video: {
+                        facingMode: { ideal: 'environment' }, // Back camera on mobile (environment = back)
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    },
+                    audio: false
+                };
+
+                cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+                
+                // Display video stream
+                cameraVideo.srcObject = cameraStream;
+                cameraVideo.classList.add('active');
+                cameraPlaceholder.style.display = 'none';
+                cameraError.classList.remove('show');
+                
+                return true;
+            } catch (error) {
+                console.error('Camera error:', error);
+                showCameraError(error);
+                return false;
+            }
+        }
+
+        // Stop camera
+        function stopCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+            cameraVideo.srcObject = null;
+            cameraVideo.classList.remove('active');
+            cameraPlaceholder.style.display = 'block';
+        }
+
+        // Show camera error
+        function showCameraError(error) {
+            let message = 'Camera error occurred';
+            
+            if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                message = 'Please allow camera access and try again';
+            } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+                message = 'Camera not available on this device';
+            } else if (error.message === 'UNSUPPORTED') {
+                message = "Your browser doesn't support camera access";
+            } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+                message = 'Camera is being used by another application';
+            }
+            
+            errorMessage.textContent = message;
+            cameraError.classList.add('show');
+            cameraPlaceholder.style.display = 'none';
+        }
+
+
+        // Haptic feedback functions
+        function vibrate(pattern) {
+            if (hapticEnabled && 'vibrate' in navigator) {
+                navigator.vibrate(pattern);
+            }
+        }
+
+        function toggleHaptic() {
+            hapticEnabled = !hapticEnabled;
+            if (hapticEnabled) {
+                hapticSwitch.classList.add('active');
+                vibrate(100); // Quick confirmation
+            } else {
+                hapticSwitch.classList.remove('active');
+            }
+            localStorage.setItem('sightsafe_haptic', hapticEnabled);
+        }
+
+        function loadHapticPreference() {
+            const saved = localStorage.getItem('sightsafe_haptic');
+            if (saved !== null) {
+                hapticEnabled = saved === 'true';
+            }
+            if (hapticEnabled) {
+                hapticSwitch.classList.add('active');
+            }
+        }
+
+        // IMAGE ANALYSIS FUNCTIONS
+        
+        // BUG FIX 10: Performance throttling for canvas analysis
+        let lastAnalysisTime = 0;
+        let previousAnalysisResult = null;
+        
+        // Analyze camera frame for real detection
+        function analyzeFrame() {
+            // BUG FIX 10: Throttle analysis to every 300ms for performance
+            const now = Date.now();
+            if (now - lastAnalysisTime < 300 && previousAnalysisResult) {
+                return previousAnalysisResult;
+            }
+            lastAnalysisTime = now;
+            
+            // BUG FIX 5: Safety check - ensure video is ready
+            if (!cameraVideo.videoWidth || !cameraVideo.videoHeight) {
+                console.log('Video not ready yet');
+                return previousAnalysisResult || { detection: detections[2], confidence: 50 }; // Return safe default
+            }
+            
+            // Set canvas size to match video
+            analysisCanvas.width = cameraVideo.videoWidth || 640;
+            analysisCanvas.height = cameraVideo.videoHeight || 480;
+            
+            // Draw current video frame to canvas
+            analysisCtx.drawImage(cameraVideo, 0, 0, analysisCanvas.width, analysisCanvas.height);
+            
+            // Get pixel data
+            const imageData = analysisCtx.getImageData(0, 0, analysisCanvas.width, analysisCanvas.height);
+            const pixels = imageData.data;
+            
+            // Perform analysis
+            const edgeScore = detectEdges(pixels, analysisCanvas.width, analysisCanvas.height);
+            const brightness = analyzeBrightness(pixels);
+            const colorVariance = analyzeColorVariance(pixels);
+            const motionScore = detectMotion(pixels);
+            
+            // Determine detection based on analysis
+            const result = determineDetection(edgeScore, brightness, colorVariance, motionScore);
+            previousAnalysisResult = result;
+            return result;
+        }
+        
+        // Edge detection using Sobel-like algorithm
+        function detectEdges(pixels, width, height) {
+            let edgeCount = 0;
+            let totalPixels = 0;
+            const threshold = 30; // Edge detection threshold
+            
+            // Sample every 4th pixel for performance
+            for (let y = 1; y < height - 1; y += 4) {
+                for (let x = 1; x < width - 1; x += 4) {
+                    const idx = (y * width + x) * 4;
+                    
+                    // Get surrounding pixels for gradient calculation
+                    const topIdx = ((y - 1) * width + x) * 4;
+                    const bottomIdx = ((y + 1) * width + x) * 4;
+                    const leftIdx = (y * width + (x - 1)) * 4;
+                    const rightIdx = (y * width + (x + 1)) * 4;
+                    
+                    // Calculate gradients
+                    const gx = Math.abs(pixels[rightIdx] - pixels[leftIdx]);
+                    const gy = Math.abs(pixels[bottomIdx] - pixels[topIdx]);
+                    const gradient = Math.sqrt(gx * gx + gy * gy);
+                    
+                    if (gradient > threshold) {
+                        edgeCount++;
+                    }
+                    totalPixels++;
+                }
+            }
+            
+            return (edgeCount / totalPixels) * 100; // Return percentage
+        }
+        
+        // Analyze brightness levels
+        function analyzeBrightness(pixels) {
+            let totalBrightness = 0;
+            const sampleSize = pixels.length / 4;
+            
+            for (let i = 0; i < pixels.length; i += 16) { // Sample every 4th pixel
+                const r = pixels[i];
+                const g = pixels[i + 1];
+                const b = pixels[i + 2];
+                // Calculate perceived brightness
+                const brightness = (0.299 * r + 0.587 * g + 0.114 * b);
+                totalBrightness += brightness;
+            }
+            
+            return totalBrightness / (sampleSize / 4);
+        }
+        
+        // Analyze color variance (helps detect people vs empty space)
+        function analyzeColorVariance(pixels) {
+            const colorBuckets = {};
+            let uniqueColors = 0;
+            
+            // Sample colors and count unique regions
+            for (let i = 0; i < pixels.length; i += 64) { // Sample sparsely
+                const r = Math.floor(pixels[i] / 32);
+                const g = Math.floor(pixels[i + 1] / 32);
+                const b = Math.floor(pixels[i + 2] / 32);
+                const colorKey = `${r}-${g}-${b}`;
+                
+                if (!colorBuckets[colorKey]) {
+                    colorBuckets[colorKey] = 0;
+                    uniqueColors++;
+                }
+                colorBuckets[colorKey]++;
+            }
+            
+            return uniqueColors;
+        }
+        
+        // Detect motion by comparing with previous frame
+        function detectMotion(pixels) {
+            if (!previousFrameData) {
+                previousFrameData = new Uint8ClampedArray(pixels);
+                return 0;
+            }
+            
+            let diffCount = 0;
+            const threshold = 25;
+            
+            for (let i = 0; i < pixels.length; i += 16) { // Sample every 4th pixel
+                const diff = Math.abs(pixels[i] - previousFrameData[i]);
+                if (diff > threshold) {
+                    diffCount++;
+                }
+            }
+            
+            // Store current frame for next comparison
+            previousFrameData = new Uint8ClampedArray(pixels);
+            
+            return (diffCount / (pixels.length / 16)) * 100;
+        }
+        
+        // Determine detection based on analysis results
+        function determineDetection(edgeScore, brightness, colorVariance, motionScore) {
+            let selectedDetection;
+            let confidence = 70; // Base confidence
+            
+            // HIGH RISK DETECTION
+            if (edgeScore > 35) {
+                // High edge density suggests obstacles
+                if (edgeScore > 45) {
+                    // Very high edges with patterns suggest stairs
+                    selectedDetection = detectionOptions.find(d => d.item === 'Stairs detected');
+                    confidence = Math.min(95, 75 + (edgeScore - 45) * 2);
+                } else if (colorVariance > 40) {
+                    // High edges with color variance suggests uneven surface
+                    selectedDetection = detectionOptions.find(d => d.item === 'Uneven surface');
+                    confidence = Math.min(92, 72 + edgeScore);
+                } else {
+                    // General obstacle
+                    selectedDetection = detectionOptions.find(d => d.item === 'Obstacle ahead');
+                    confidence = Math.min(90, 70 + edgeScore);
+                }
+            }
+            // MEDIUM RISK DETECTION
+            else if (motionScore > 15 || (colorVariance > 50 && edgeScore > 20)) {
+                // Motion or varied colors with some edges suggests person
+                selectedDetection = detectionOptions.find(d => d.item === 'Person nearby');
+                confidence = Math.min(88, 68 + motionScore + (colorVariance / 5));
+            }
+            // LOW LIGHT WARNING
+            else if (brightness < 40) {
+                // Very dark environment
+                selectedDetection = detectionOptions.find(d => d.item === 'Person nearby');
+                if (selectedDetection) {
+                    selectedDetection = {
+                        ...selectedDetection,
+                        item: 'Low light detected',
+                        risk: 'MEDIUM',
+                        messages: ['Caution! Lighting is poor. Please move slowly and consider using additional light sources.']
+                    };
+                }
+                confidence = Math.min(85, 65 + (40 - brightness));
+            }
+            // SAFE PATH
+            else if (edgeScore < 15 && colorVariance < 35) {
+                // Low edges and uniform colors suggest clear path
+                selectedDetection = detectionOptions.find(d => d.item === 'Clear path');
+                confidence = Math.min(93, 75 + (15 - edgeScore) * 2);
+            }
+            // DEFAULT FALLBACK
+            else {
+                // Uncertain conditions - default to medium risk
+                const mediumOptions = detectionOptions.filter(d => d.risk === 'MEDIUM');
+                selectedDetection = mediumOptions[0];
+                confidence = 72;
+            }
+            
+            // Safety check: ensure selectedDetection is never undefined
+            if (!selectedDetection) {
+                selectedDetection = detectionOptions[0]; // Default to first option
+                confidence = 70;
+            }
+            
+            return {
+                detection: selectedDetection,
+                confidence: Math.round(confidence),
+                metrics: {
+                    edges: Math.round(edgeScore),
+                    brightness: Math.round(brightness),
+                    colors: colorVariance,
+                    motion: Math.round(motionScore)
+                }
+            };
+        }
+
+        // Perform scan with real camera and image analysis
+        // ENHANCEMENT 1: Better error recovery with try-catch
+        async function performScan() {
+            try {
+                if (isScanning) return;
+                
+                isScanning = true;
+                scanButton.disabled = true;
+                scanButton.textContent = 'Starting Camera...';
+                resultsSection.classList.remove('show');
+                cameraError.classList.remove('show');
+
+                // Start camera
+                const cameraStarted = await startCamera();
+                
+                if (!cameraStarted) {
+                    scanButton.disabled = false;
+                    scanButton.textContent = 'Scan Environment';
+                    isScanning = false;
+                    return;
+                }
+
+                // Show scanning state
+                scanButton.textContent = 'Scanning...';
+                cameraPreview.classList.add('scanning');
+                
+                // Vibrate when scan starts
+                vibrate(200);
+
+                // Wait for camera to stabilize and capture multiple frames
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Analyze multiple frames for better accuracy
+                let analysisResults = [];
+                for (let i = 0; i < 3; i++) {
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    const result = analyzeFrame();
+                    analysisResults.push(result);
+                }
+                
+                // Use the most confident result
+                const bestResult = analysisResults.reduce((best, current) =>
+                    current.confidence > best.confidence ? current : best
+                );
+                
+                const selectedDetection = bestResult.detection;
+                const confidence = bestResult.confidence;
+
+                // BUG FIX 2: Stop camera after scan to prevent battery drain
+                stopCamera();
+
+                const message = selectedDetection.messages[Math.floor(Math.random() * selectedDetection.messages.length)];
+                
+                // Create scan record
+                const scanRecord = {
+                    timestamp: new Date(),
+                    item: selectedDetection.item,
+                    risk: selectedDetection.risk,
+                    message: message
+                };
+
+                // Update history
+                scanHistory.unshift(scanRecord);
+                if (scanHistory.length > 5) scanHistory.pop();
+
+                // Update stats
+                stats.total++;
+                if (selectedDetection.risk === 'HIGH') stats.high++;
+                else if (selectedDetection.risk === 'MEDIUM') stats.medium++;
+                else stats.safe++;
+
+                // Display results with confidence score
+                currentMessage = message;
+                resultItem.textContent = selectedDetection.item;
+                resultMessage.textContent = `${message}\n\nConfidence: ${confidence}%`;
+                riskBadge.textContent = selectedDetection.risk;
+                riskBadge.className = 'risk-badge risk-' + selectedDetection.risk.toLowerCase();
+
+                // Update UI
+                updateStats();
+                updateHistory();
+                // BUG FIX 6: Ensure results display properly - force display
+                resultsSection.style.display = 'block';
+                resultsSection.classList.add('show');
+                // Force reflow to ensure animation triggers
+                void resultsSection.offsetHeight;
+                
+                // Vibrate when scan completes
+                vibrate(300);
+
+                // Reset scan button
+                cameraPreview.classList.remove('scanning');
+                scanButton.disabled = false;
+                scanButton.textContent = 'Scan Environment';
+                isScanning = false;
+                
+                // Save data
+                saveData();
+            } catch (error) {
+                // ENHANCEMENT 1: Error recovery
+                console.error('Scan error:', error);
+                stopCamera();
+                isScanning = false;
+                scanButton.disabled = false;
+                scanButton.textContent = 'Scan Environment';
+                cameraPreview.classList.remove('scanning');
+            }
+        }
+
+        // Update stats display
+        function updateStats() {
+            totalScans.textContent = stats.total;
+            highRisk.textContent = stats.high;
+            mediumRisk.textContent = stats.medium;
+            safeCount.textContent = stats.safe;
+        }
+
+        // Update history display
+        function updateHistory() {
+            if (scanHistory.length === 0) return;
+
+            historyList.innerHTML = scanHistory.map(scan => {
+                const time = scan.timestamp.toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                const riskClass = 'risk-' + scan.risk.toLowerCase();
+                return `
+                    <div class="history-item">
+                        <div class="history-time">${time}</div>
+                        <div class="history-detection">${scan.item}</div>
+                        <span class="risk-badge ${riskClass}" style="display: inline-block; margin-top: 8px; font-size: 10px; padding: 4px 12px;">${scan.risk}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Voice playback with Web Speech API
+        // BUG FIX 9: Voice playback with better fallback
+        function toggleVoice() {
+            // Check if Web Speech API is supported
+            if (!('speechSynthesis' in window)) {
+                alert('Voice playback not supported on this browser');
+                voiceText.textContent = '❌ Voice not available';
+                setTimeout(() => {
+                    voiceText.textContent = 'Play Voice Message';
+                }, 2000);
+                return;
+            }
+
+            // Cancel any previous speech
+            window.speechSynthesis.cancel();
+
+            // If already speaking, stop it
+            if (isPlayingVoice) {
+                isPlayingVoice = false;
+                voiceText.textContent = 'Play Voice Message';
+                waveform.classList.add('hidden');
+                voiceButton.disabled = false;
+                return;
+            }
+
+            // Create speech utterance
+            const utterance = new SpeechSynthesisUtterance(currentMessage);
+            
+            // Configure voice settings for elderly users
+            utterance.rate = 0.7;      // Slow speech for clarity
+            utterance.pitch = 1.0;     // Normal pitch
+            utterance.volume = 1.0;    // Full volume
+            utterance.lang = 'en-US';  // English US
+
+            // Update UI when speech starts
+            utterance.onstart = () => {
+                isPlayingVoice = true;
+                voiceText.textContent = '🔊 Speaking...';
+                waveform.classList.remove('hidden');
+                voiceButton.disabled = true;
+                
+                // Vibrate when voice plays
+                vibrate(100);
+            };
+
+            // Update UI when speech ends
+            utterance.onend = () => {
+                isPlayingVoice = false;
+                voiceText.textContent = '✅ Message Complete';
+                waveform.classList.add('hidden');
+                
+                // Reset button after 1 second
+                setTimeout(() => {
+                    voiceText.textContent = 'Play Voice Message';
+                    voiceButton.disabled = false;
+                }, 1000);
+            };
+
+            // Handle errors
+            utterance.onerror = (event) => {
+                console.error('Speech error:', event);
+                isPlayingVoice = false;
+                voiceText.textContent = '❌ Voice error';
+                waveform.classList.add('hidden');
+                voiceButton.disabled = false;
+                
+                // Vibrate error pattern (3 short pulses)
+                vibrate([100, 100, 100, 100, 100]);
+                
+                // Reset button after 2 seconds
+                setTimeout(() => {
+                    voiceText.textContent = 'Play Voice Message';
+                }, 2000);
+            };
+
+            // Speak the message
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Voice command functions - with queue management
+        function speakFeedback(text, rate = 0.7) {
+            if ('speechSynthesis' in window) {
+                // Cancel any ongoing speech to prevent overlap
+                window.speechSynthesis.cancel();
+                
+                // Small delay to ensure clean speech
+                setTimeout(() => {
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.rate = rate; // Slower for elderly-friendly
+                    utterance.pitch = 1.0;
+                    utterance.volume = 1.0;
+                    utterance.lang = 'en-US';
+                    window.speechSynthesis.speak(utterance);
+                }, 100);
+            }
+        }
+
+        // REQUEST MICROPHONE PERMISSION IMMEDIATELY
+        function requestMicrophonePermission() {
+            return navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    // Permission granted - stop the stream immediately
+                    stream.getTracks().forEach(track => track.stop());
+                    console.log('✅ Microphone permission granted');
+                    return true;
+                })
+                .catch(error => {
+                    console.error('❌ Microphone permission denied:', error);
+                    voiceStatus.style.display = 'block';
+                    voiceStatus.classList.add('wake-word');
+                    voiceStatusText.textContent = '❌ Please allow microphone access';
+                    speakFeedback('Please allow microphone access to use voice commands. Go to browser settings and enable microphone for this site.');
+                    return false;
+                });
+        }
+
+        // Initialize wake word detection
+        function initWakeWordDetection() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            if (!SpeechRecognition) {
+                console.log('Speech Recognition not supported');
+                voiceStatus.style.display = 'block';
+                voiceStatus.classList.add('wake-word');
+                voiceStatusText.textContent = '❌ Voice commands not supported in this browser';
+                return;
+            }
+
+            wakeWordRecognition = new SpeechRecognition();
+            wakeWordRecognition.continuous = true;
+            wakeWordRecognition.interimResults = true;  // Enable interim results for better recognition
+            wakeWordRecognition.lang = 'en-US';
+            wakeWordRecognition.maxAlternatives = 1;
+
+            wakeWordRecognition.onstart = () => {
+                isWakeWordMode = true;
+                voiceStatus.style.display = 'block';
+                voiceStatus.classList.add('wake-word');
+                voiceStatusText.textContent = '🎤 Ready';
+                console.log('Wake word detection started');
+            };
+
+            wakeWordRecognition.onresult = (event) => {
+                let transcript = '';
+                
+                // Get full transcript from all results
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const result = event.results[i];
+                    const confidence = result[0].confidence;
+                    transcript += result[0].transcript + ' ';
+                    
+                    // DEBUG: Log what was recognized
+                    console.log('Recognized:', result[0].transcript, 'Confidence:', confidence, 'Final:', result.isFinal);
+                }
+                
+                // Clean the transcript
+                transcript = transcript.toLowerCase().trim();
+                transcript = transcript.replace(/\s+/g, ' '); // Remove extra spaces
+                
+                console.log('Cleaned transcript:', transcript);
+                
+                // Check for wake word - allow variations
+                // Accept: "sightsafe", "sight safe", "hey sightsafe", "hi sightsafe", etc.
+                if (transcript.includes('sightsafe') ||
+                    transcript.includes('sight safe') ||
+                    transcript.includes('site safe') ||
+                    transcript.includes('cy safe')) {
+                    
+                    // Wake word detected!
+                    console.log('✅ Wake word detected!');
+                    playBeep(600, 200);
+                    vibrate(200);
+                    
+                    // Stop wake word detection
+                    wakeWordRecognition.stop();
+                    isWakeWordMode = false;
+                    
+                    // Start voice command mode
+                    voiceStatus.classList.remove('wake-word');
+                    voiceStatus.classList.add('active');
+                    voiceStatusText.textContent = '🎤 Listening...';
+                    
+                    // Speak ONCE only
+                    speakFeedback("Listening for command");
+                    
+                    // Start command recognition after brief announcement
+                    setTimeout(() => {
+                        startVoiceCommands();
+                        
+                        // Set 30-second timeout (silent return)
+                        commandTimeout = setTimeout(() => {
+                            if (isListening) {
+                                // Silent timeout - just return to wake word mode
+                                playBeep(400, 100);
+                                stopVoiceCommands();
+                                startWakeWordDetection();
+                            }
+                        }, 30000);
+                    }, 1500);
+                }
+            };
+
+            wakeWordRecognition.onerror = (event) => {
+                console.error('Wake word error:', event.error);
+                
+                if (event.error === 'not-allowed' || event.error === 'permission-denied') {
+                    voiceStatusText.textContent = '❌ Please allow microphone access and refresh';
+                    speakFeedback('Please allow microphone access');
+                } else if (event.error !== 'no-speech' && event.error !== 'aborted') {
+                    // Auto-restart on other errors (except no-speech and aborted)
+                    setTimeout(() => {
+                        if (isWakeWordMode) {
+                            try {
+                                wakeWordRecognition.start();
+                            } catch (e) {
+                                console.log('Could not restart wake word detection');
+                            }
+                        }
+                    }, 1000);
+                }
+            };
+
+            wakeWordRecognition.onend = () => {
+                // Auto-restart if still in wake word mode
+                if (isWakeWordMode) {
+                    try {
+                        wakeWordRecognition.start();
+                    } catch (e) {
+                        console.log('Wake word detection restart failed');
+                    }
+                }
+            };
+
+            // Start listening for wake word
+            try {
+                wakeWordRecognition.start();
+            } catch (e) {
+                console.error('Could not start wake word detection:', e);
+            }
+        }
+
+        function startWakeWordDetection() {
+            if (wakeWordRecognition) {
+                isWakeWordMode = true;
+                voiceStatus.style.display = 'block';
+                voiceStatus.classList.remove('active', 'success');
+                voiceStatus.classList.add('wake-word');
+                voiceStatusText.textContent = '👋 Say "Hey SightSafe" to begin';
+                try {
+                    wakeWordRecognition.start();
+                } catch (e) {
+                    console.log('Wake word already running');
+                }
+            }
+        }
+
+        function stopWakeWordDetection() {
+            if (wakeWordRecognition) {
+                isWakeWordMode = false;
+                try {
+                    wakeWordRecognition.stop();
+                } catch (e) {
+                    console.log('Wake word already stopped');
+                }
+            }
+        }
+
+        function initVoiceRecognition() {
+            // Check if Speech Recognition is supported
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            if (!SpeechRecognition) {
+                voiceCommandButton.disabled = true;
+                voiceCommandText.textContent = 'Voice commands not available';
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+            recognition.maxAlternatives = 1;  // Best match only
+
+            recognition.onstart = () => {
+                isListening = true;
+                voiceCommandButton.classList.add('listening');
+                voiceCommandText.textContent = 'Stop Voice Commands';
+                voiceCommandIcon.textContent = '🔴';
+                voiceStatus.style.display = 'block';
+                voiceStatus.classList.add('active');
+                voiceStatusText.textContent = '🎤 Listening...';
+                recognizedText.textContent = '';
+                // NO SPEECH - just update UI silently
+            };
+
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const result = event.results[i];
+                    const confidence = result[0].confidence;
+                    const transcript = result[0].transcript;
+                    
+                    // DEBUG: Log recognition details
+                    console.log('Command recognized:', transcript, 'Confidence:', confidence, 'Final:', result.isFinal);
+                    
+                    if (result.isFinal) {
+                        // Only process if confidence is good (>0.5)
+                        if (confidence > 0.5 || confidence === undefined) {
+                            finalTranscript += transcript;
+                        } else {
+                            console.log('Low confidence, ignoring:', confidence);
+                        }
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+
+                // Show what user is saying
+                if (interimTranscript) {
+                    recognizedText.textContent = `"${interimTranscript}"`;
+                }
+
+                // Process final command
+                if (finalTranscript) {
+                    const cleanedCommand = finalTranscript.toLowerCase().trim().replace(/\s+/g, ' ');
+                    recognizedText.textContent = `"${finalTranscript}"`;
+                    console.log('Processing command:', cleanedCommand);
+                    processVoiceCommand(cleanedCommand);
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                
+                if (event.error === 'not-allowed') {
+                    voiceStatusText.textContent = '❌ Please allow microphone access';
+                    speakFeedback('Please allow microphone access');
+                    stopVoiceCommands();
+                } else if (event.error === 'no-speech') {
+                    // Silent - just keep listening
+                    voiceStatusText.textContent = '🎤 Listening...';
+                } else if (event.error !== 'aborted') {
+                    voiceStatusText.textContent = '❌ Error: ' + event.error;
+                    playErrorBeep();
+                }
+            };
+
+            recognition.onend = () => {
+                // Auto-restart if still supposed to be listening
+                if (isListening) {
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        console.log('Recognition restart failed:', e);
+                    }
+                }
+            };
+        }
+
+        function processVoiceCommand(command) {
+            console.log('🎯 Processing command:', command);
+            
+            voiceStatus.classList.remove('active');
+            voiceStatus.classList.add('success');
+            
+            // Clear command timeout
+            if (commandTimeout) {
+                clearTimeout(commandTimeout);
+            }
+            
+            // Audio + Haptic feedback when command recognized
+            playConfirmationBeep();
+            vibrate(150);
+            
+            // SCAN COMMAND - Check for multiple variations
+            if (command.includes('scan') ||
+                command.includes('start scan') ||
+                command.includes('check') ||
+                command.includes('check path') ||
+                command.includes('analyze') ||
+                command.includes('look around')) {
+                console.log('✅ Scan command detected');
+                voiceStatusText.textContent = '🔄 Scanning...';
+                speakFeedback('Scanning');
+                stopVoiceCommands();
+                setTimeout(() => {
+                    if (!isScanning) performScan();
+                    // Return to wake word after scan completes
+                    setTimeout(() => startWakeWordDetection(), 3000);
+                }, 800);
+                return;
+            }
+            // LISTEN/VOICE COMMAND - Check for multiple variations
+            else if (command.includes('listen') ||
+                     command.includes('play voice') ||
+                     command.includes('speak') ||
+                     command.includes('hear message') ||
+                     command.includes('read') ||
+                     command.includes('play') ||
+                     command.includes('speak again')) {
+                console.log('✅ Listen command detected');
+                voiceStatusText.textContent = '🔊 Playing message';
+                speakFeedback('Playing message');
+                stopVoiceCommands();
+                setTimeout(() => {
+                    if (!isPlayingVoice) toggleVoice();
+                    // Return to wake word after message plays
+                    setTimeout(() => startWakeWordDetection(), 2000);
+                }, 800);
+                return;
+            }
+            // CLEAR HISTORY COMMAND - Check for multiple variations
+            else if (command.includes('clear') ||
+                     command.includes('delete') ||
+                     command.includes('clear history') ||
+                     command.includes('delete all') ||
+                     command.includes('reset') ||
+                     command.includes('clear all')) {
+                console.log('✅ Clear command detected');
+                voiceStatusText.textContent = '⚠️ Confirm clear';
+                speakFeedback('Are you sure? Say yes or no');
+                recognizedText.textContent = 'Waiting for confirmation...';
+                
+                // Wait for confirmation
+                setTimeout(() => {
+                    const confirmRecognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+                    confirmRecognition.continuous = false;
+                    confirmRecognition.interimResults = false;
+                    confirmRecognition.lang = 'en-US';
+                    
+                    confirmRecognition.onresult = (event) => {
+                        const response = event.results[0][0].transcript.toLowerCase().trim();
+                        console.log('Confirmation response:', response);
+                        if (response.includes('yes')) {
+                            clearAllHistory();
+                            playDingSound();
+                            vibrate([100, 100, 100]);
+                            speakFeedback('History cleared');
+                        } else {
+                            speakFeedback('Cancelled');
+                        }
+                        // Return to wake word
+                        stopVoiceCommands();
+                        setTimeout(() => startWakeWordDetection(), 1500);
+                    };
+                    
+                    try {
+                        confirmRecognition.start();
+                    } catch (e) {
+                        console.log('Confirmation failed');
+                        stopVoiceCommands();
+                        startWakeWordDetection();
+                    }
+                }, 1500);
+                return;
+            }
+            // HELP COMMAND - Check for multiple variations
+            else if (command.includes('help') ||
+                     command.includes('commands') ||
+                     command.includes('what can you do') ||
+                     command.includes('how to use')) {
+                console.log('✅ Help command detected');
+                voiceStatusText.textContent = 'ℹ️ Help';
+                const helpMessage = 'Say: scan, listen, clear, stop, or repeat';
+                speakFeedback(helpMessage, 0.7);
+                // Return to wake word after help
+                stopVoiceCommands();
+                setTimeout(() => startWakeWordDetection(), 5000);
+                return;
+            }
+            // STOP COMMAND - Check for multiple variations
+            else if (command.includes('stop') ||
+                     command.includes('stop listening') ||
+                     command.includes('sleep') ||
+                     command.includes('goodbye') ||
+                     command.includes('quit')) {
+                console.log('✅ Stop command detected');
+                voiceStatusText.textContent = '👋 Goodbye';
+                speakFeedback('Goodbye, stay safe');
+                setTimeout(() => {
+                    stopVoiceCommands();
+                    startWakeWordDetection();
+                }, 1200);
+                return;
+            }
+            // REPEAT COMMAND
+            else if (command.includes('repeat') || command.includes('say again')) {
+                console.log('✅ Repeat command detected');
+                voiceStatusText.textContent = '🔁 Repeating';
+                if (lastSafetyMessage) {
+                    speakFeedback(lastSafetyMessage, 0.7);
+                } else {
+                    speakFeedback('No previous message');
+                }
+                // Return to wake word after repeat
+                stopVoiceCommands();
+                setTimeout(() => startWakeWordDetection(), 3000);
+                return;
+            }
+            // COMMAND NOT RECOGNIZED
+            else {
+                console.log('❌ Command not recognized:', command);
+                voiceStatusText.textContent = '❌ Not recognized';
+                playBeep(300, 100);
+                vibrate(100);
+                speakFeedback("Sorry, I didn't catch that. Try: scan, listen, clear, or stop");
+                // Don't stop - continue listening for 5 more seconds
+                setTimeout(() => {
+                    if (isListening) {
+                        stopVoiceCommands();
+                        startWakeWordDetection();
+                    }
+                }, 5000);
+                return;
+            }
+        }
+
+        function toggleVoiceCommands() {
+            if (isListening) {
+                stopVoiceCommands();
+            } else {
+                startVoiceCommands();
+            }
+        }
+
+        // BUG FIX 4: Improved voice command parsing
+        function startVoiceCommands() {
+            if (!recognition) {
+                initVoiceRecognition();
+            }
+            
+            if (recognition) {
+                try {
+                    recognition.start();
+                } catch (e) {
+                    console.log('Recognition already started');
+                }
+            }
+        }
+        
+        // BUG FIX 4: Enhanced command recognition with better transcript cleaning
+        function enhancedProcessVoiceCommand(transcript) {
+            // Clean transcript properly
+            transcript = transcript.toLowerCase().trim();
+            transcript = transcript.replace(/\s+/g, ' ');
+            transcript = transcript.replace(/[.,!?]/g, ''); // Remove punctuation
+            
+            console.log('Cleaned command transcript:', transcript);
+            
+            // Check first word for better matching
+            const firstWord = transcript.split(' ')[0];
+            
+            if (firstWord.includes('scan') || transcript.includes('start scan')) {
+                return 'scan';
+            }
+            else if (firstWord.includes('listen') || firstWord.includes('play') || firstWord.includes('speak')) {
+                return 'voice';
+            }
+            else if (firstWord.includes('clear') || firstWord.includes('delete')) {
+                return 'clear';
+            }
+            else if (firstWord.includes('stop') || firstWord.includes('sleep')) {
+                return 'stop';
+            }
+            else if (firstWord.includes('help')) {
+                return 'help';
+            }
+            
+            return null; // Command not recognized
+        }
+
+        function stopVoiceCommands() {
+            isListening = false;
+            if (recognition) {
+                recognition.stop();
+            }
+            if (commandTimeout) {
+                clearTimeout(commandTimeout);
+                commandTimeout = null;
+            }
+            voiceCommandButton.classList.remove('listening');
+            voiceCommandText.textContent = 'Enable Voice Commands';
+            voiceCommandIcon.textContent = '🎤';
+            voiceStatus.classList.remove('active', 'success');
+        }
+
+        // BUG FIX 7: Clear history with proper stats reset
+        function clearAllHistory() {
+            // Reset everything
+            scanHistory = [];
+            stats = { total: 0, high: 0, medium: 0, safe: 0 };
+            
+            // Update UI
+            updateStats();
+            historyList.innerHTML = `
+                <div class="history-item" style="opacity: 0.3;">
+                    <div class="history-time">No scans yet</div>
+                    <div class="history-detection">Start your first scan</div>
+                </div>
+            `;
+            
+            // BUG FIX 7: Hide results section properly
+            resultsSection.classList.remove('show');
+            resultsSection.style.display = 'none';
+            
+            // Save cleared state
+            saveData();
+            
+            // Speak confirmation
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance('History cleared');
+                utterance.rate = 0.7;
+                window.speechSynthesis.speak(utterance);
+            }
+            
+            // Audio + Haptic feedback
+            playDingSound();
+            vibrate([100, 100, 100]);
+        }
+
+        // BUG FIX 8: Improved splash screen handling
+        function hideSplashScreen() {
+            const splashScreen = document.getElementById('splashScreen');
+            if (splashScreen) {
+                splashScreen.classList.add('hidden');
+                splashScreen.classList.add('fade-out');
+                // Wait for animation to complete
+                setTimeout(() => {
+                    splashScreen.style.display = 'none';
+                }, 800);
+            }
+        }
+        
+        // Initialize splash screen
+        function initSplashScreen() {
+            const splashScreen = document.getElementById('splashScreen');
+            const welcomeScreen = document.getElementById('welcomeScreen');
+            const hasSeenWelcome = localStorage.getItem('sightsafe_welcome_seen');
+            
+            // BUG FIX 8: Show splash screen for 2 seconds on load
+            setTimeout(() => {
+                hideSplashScreen();
+                
+                setTimeout(() => {
+                    // After splash, check if first time user
+                    if (!hasSeenWelcome) {
+                        // First time: show welcome screen
+                        welcomeScreen.style.display = 'flex';
+                    } else {
+                        // BUG FIX 3: Request microphone permission then start wake word
+                        requestMicrophonePermission().then(granted => {
+                            if (granted) {
+                                initWakeWordDetection();
+                            }
+                        });
+                    }
+                }, 800);
+            }, 2000); // 2 seconds splash duration
+        }
+
+        // Welcome screen functionality
+        function initWelcomeScreen() {
+            const welcomeScreen = document.getElementById('welcomeScreen');
+            const welcomeButton = document.getElementById('welcomeButton');
+            
+            welcomeButton.addEventListener('click', () => {
+                welcomeScreen.classList.add('fade-out');
+                localStorage.setItem('sightsafe_welcome_seen', 'true');
+                setTimeout(() => {
+                    welcomeScreen.style.display = 'none';
+                    // Request microphone permission then start wake word detection
+                    requestMicrophonePermission().then(granted => {
+                        if (granted) {
+                            initWakeWordDetection();
+                        }
+                    });
+                }, 500);
+            });
+        }
+
+        // ENHANCEMENT 3: Accessibility improvements - ARIA labels and keyboard support
+        function initAccessibility() {
+            // Add ARIA labels
+            scanButton.setAttribute('aria-label', 'Tap to scan environment');
+            scanButton.setAttribute('role', 'button');
+            voiceButton.setAttribute('aria-label', 'Play voice message');
+            voiceCommandButton.setAttribute('aria-label', 'Enable voice commands');
+            
+            // Add Enter key support
+            document.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && document.activeElement === scanButton) {
+                    performScan();
+                }
+            });
+        }
+        
+        // ENHANCEMENT 4: Better mobile experience
+        function initMobileOptimizations() {
+            // Mobile optimizations without preventing scroll
+            console.log('Mobile optimizations initialized');
+        }
+        
+        // Event listeners
+        scanButton.addEventListener('click', performScan);
+        voiceButton.addEventListener('click', toggleVoice);
+        voiceCommandButton.addEventListener('click', toggleVoiceCommands);
+        hapticToggle.addEventListener('click', toggleHaptic);
+        retryButton.addEventListener('click', () => {
+            cameraError.classList.remove('show');
+            cameraPlaceholder.style.display = 'block';
+            performScan();
+        });
+        document.getElementById('clearHistoryButton').addEventListener('click', clearAllHistory);
+
+        // Keyboard accessibility
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !isScanning) {
+                performScan();
+            }
+        });
+
+        // Load saved data from localStorage
+        function loadSavedData() {
+            try {
+                const saved = localStorage.getItem('sightsafe_data');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    stats = data.stats || stats;
+                    scanHistory = (data.history || []).map(h => ({
+                        ...h,
+                        timestamp: new Date(h.timestamp)
+                    }));
+                    updateStats();
+                    updateHistory();
+                }
+            } catch (e) {
+                console.log('No saved data found');
+            }
+        }
+
+        // Save data to localStorage
+        // ENHANCEMENT 2: Local storage persistence
+        function saveData() {
+            try {
+                localStorage.setItem('sightsafe_history', JSON.stringify(scanHistory));
+                localStorage.setItem('sightsafe_stats', JSON.stringify(stats));
+                localStorage.setItem('sightsafe_data', JSON.stringify({
+                    stats: stats,
+                    history: scanHistory
+                }));
+            } catch (e) {
+                console.log('Could not save data');
+            }
+        }
+        
+        function loadData() {
+            try {
+                const history = localStorage.getItem('sightsafe_history');
+                const savedStats = localStorage.getItem('sightsafe_stats');
+                
+                if (history) {
+                    scanHistory = JSON.parse(history);
+                }
+                if (savedStats) {
+                    stats = JSON.parse(savedStats);
+                }
+                
+                updateStats();
+                updateHistory();
+            } catch (e) {
+                console.log('Could not load data');
+            }
+        }
+
+        // Auto-save on changes
+        window.addEventListener('beforeunload', saveData);
+        
+        // CRITICAL FIX: Safe initialization with DOMContentLoaded
+        function initApp() {
+            console.log('SightSafe app initializing...');
+            
+            try {
+                loadData();
+                initAccessibility();
+                initMobileOptimizations();
+                
+                // Load saved preferences
+                loadHapticPreference();
+                
+                // Request microphone permission (with small delay)
+                setTimeout(() => {
+                    requestMicrophonePermission().then(granted => {
+                        if (granted) {
+                            console.log('Starting wake word detection...');
+                            initWakeWordDetection();
+                        } else {
+                            console.log('Microphone permission denied');
+                        }
+                    }).catch(err => {
+                        console.error('Permission error:', err);
+                    });
+                }, 500);
+                
+                // Update UI on page load
+                updateStats();
+                updateHistory();
+                
+                console.log('App initialized successfully');
+            } catch (error) {
+                console.error('Initialization error:', error);
+            }
+        }
+
+        // Initialize app on page load
+        window.addEventListener('DOMContentLoaded', initApp);
+
+        // Handle visibility changes (pause/resume when tab is hidden)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                // App is hidden - pause voice recognition
+                if (wakeWordRecognition) {
+                    try {
+                        wakeWordRecognition.stop();
+                    } catch (e) {
+                        console.log('Could not stop wake word detection');
+                    }
+                }
+            } else {
+                // App is visible again - resume
+                if (wakeWordRecognition && !isWakeWordMode) {
+                    try {
+                        wakeWordRecognition.start();
+                    } catch (e) {
+                        console.log('Could not restart wake word detection');
+                    }
+                }
+            }
+        });
+
+        // Initialize
+        initSplashScreen();
+        initWelcomeScreen();
+        loadSavedData();
+        initVoiceRecognition();
+    </script>
+</body>
+</html>
