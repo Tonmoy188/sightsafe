@@ -74,8 +74,5 @@ MIT License - Open source for the accessibility community
 ---
 
 **Empowering independence through technology** 🚀  
-*Built with ❤️ and Bob AI Assistant*
+*Built with Bob AI Assistant*
 
----
-
-Copy and paste this entire text into your GitHub README.md!
